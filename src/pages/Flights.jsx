@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Table, Tag, Space, Modal, Form, Input, Button, message } from "antd";
-import axios from "../../utils/axios"; // bu siz yozgan axios.js
+import axios from "../utils/axios";
 
 const Flights = () => {
   const [flights, setFlights] = useState([]);
