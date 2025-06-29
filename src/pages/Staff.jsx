@@ -1,62 +1,66 @@
-import React from "react";
-import { Table, Space, Tag } from "antd";
-
-const columns = [
-  {
-    title: "Name",
-    dataIndex: "name",
-    key: "name",
-  },
-  {
-    title: "Role",
-    dataIndex: "role",
-    key: "role",
-  },
-  {
-    title: "Shift",
-    dataIndex: "shift",
-    key: "shift",
-    render: (text) => <Tag color="blue">{text}</Tag>,
-  },
-  {
-    title: "Phone",
-    dataIndex: "phone",
-    key: "phone",
-  },
-  {
-    title: "Action",
-    key: "action",
-    render: (_, record) => (
-      <Space size="middle">
-        <a>Edit</a>
-        <a style={{ color: "red" }}>Delete</a>
-      </Space>
-    ),
-  },
-];
-
-const data = [
-  {
-    key: "1",
-    name: "Ali Karimov",
-    role: "Flight Manager",
-    shift: "Night",
-    phone: "+998 90 123 45 67",
-  },
-  {
-    key: "2",
-    name: "Nodira Rasulova",
-    role: "Security Officer",
-    shift: "Day",
-    phone: "+998 91 765 43 21",
-  },
-];
+import React, { useEffect, useState } from "react";
+import { Table, Button, Modal, message } from "antd";
+import axios from "../../utils/axios";
 
 const Staff = () => {
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const getStaff = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("/staff");
+      setStaff(res.data);
+    } catch (err) {
+      message.error("Error fetching staff");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getStaff();
+  }, []);
+
+  const columns = [
+    {
+      title: "Full Name",
+      dataIndex: "fullName",
+      key: "fullName",
+    },
+    {
+      title: "Position",
+      dataIndex: "position",
+      key: "position",
+    },
+    {
+      title: "Shift",
+      dataIndex: "shift",
+      key: "shift",
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <>
+          <Button type="link">Edit</Button>
+          <Button danger type="link">
+            Delete
+          </Button>
+        </>
+      ),
+    },
+  ];
+
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">Staff List</h2>
-      <Table columns={columns} dataSource={data} />
+      <Table
+        dataSource={staff}
+        columns={columns}
+        rowKey="id"
+        loading={loading}
+      />
     </div>
   );
 };
