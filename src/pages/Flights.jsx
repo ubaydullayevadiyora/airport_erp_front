@@ -1,22 +1,19 @@
-// src/pages/flights/Flights.jsx
 import React, { useEffect, useState } from "react";
 import { Table, Tag, Space, Modal, Form, Input, Button, message } from "antd";
+import axios from "../../utils/axios"; // bu siz yozgan axios.js
 
 const Flights = () => {
   const [flights, setFlights] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
-  const API = import.meta.env.VITE_API_BASE;
-
   const fetchFlights = async () => {
     try {
-      const res = await fetch(`${API}/flights`);
-      const data = await res.json();
-      setFlights(data);
+      const res = await axios.get("/flights");
+      setFlights(res.data);
     } catch (err) {
-      console.error("❌ Fetch xato:", err);
-      message.error("Ma'lumotlarni yuklashda xatolik");
+      message.error("Xatolik yuz berdi");
+      console.error(err);
     }
   };
 
@@ -27,22 +24,14 @@ const Flights = () => {
   const handleAdd = async () => {
     try {
       const values = await form.validateFields();
-
-      const res = await fetch(`${API}/flights`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-
-      if (!res.ok) throw new Error("Serverdan xato");
-
-      message.success("✅ Flight qo‘shildi");
+      await axios.post("/flights", values);
+      message.success("Flight muvaffaqiyatli qo‘shildi");
       form.resetFields();
       setIsModalOpen(false);
       fetchFlights();
     } catch (err) {
-      console.error("❌ POST xato:", err);
-      message.error("Flight qo‘shishda xatolik");
+      message.error("Qo‘shishda xatolik");
+      console.error(err);
     }
   };
 
@@ -88,7 +77,7 @@ const Flights = () => {
         onClick={() => setIsModalOpen(true)}
         className="mb-4"
       >
-        ➕ Add Flight
+        Add Flight
       </Button>
       <Table columns={columns} dataSource={flights} rowKey="id" />
 
@@ -121,7 +110,7 @@ const Flights = () => {
             <Input />
           </Form.Item>
           <Form.Item name="status" label="Status" rules={[{ required: true }]}>
-            <Input placeholder="On Time, Delayed, Cancelled" />
+            <Input />
           </Form.Item>
         </Form>
       </Modal>
