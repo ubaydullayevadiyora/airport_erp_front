@@ -1,93 +1,42 @@
+// src/pages/flights/Flights.jsx
 import React, { useEffect, useState } from "react";
-import { Button, Space, Table, Tag, message, Modal } from "antd";
-import axios from "axios";
-import AddFlightModal from "../components/modals/AddFlightModal";
+import { Table, Tag, Space, Modal, Form, Input, Button, message } from "antd";
+
 const Flights = () => {
   const [flights, setFlights] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [selectedFlight, setSelectedFlight] = useState(null);
-  const [submitLoading, setSubmitLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
 
   const fetchFlights = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/flights");
-      setFlights(res.data);
-    } catch (err) {
-      message.error("Failed to load flights");
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch(`${VITE_API_BASE}/flights`);
+    const data = await res.json();
+    setFlights(data);
   };
 
   useEffect(() => {
     fetchFlights();
   }, []);
 
-  const handleAdd = () => {
-    setEditMode(false);
-    setSelectedFlight(null);
-    setModalOpen(true);
-  };
-
-  const handleEdit = (record) => {
-    setEditMode(true);
-    setSelectedFlight(record);
-    setModalOpen(true);
-  };
-
-  const handleDelete = (record) => {
-    Modal.confirm({
-      title: "Are you sure you want to delete this flight?",
-      content: `Flight: ${record.flightNo}`,
-      okText: "Yes",
-      cancelText: "No",
-      onOk: async () => {
-        try {
-          await axios.delete(`http://localhost:5000/api/flights/${record._id}`);
-          message.success("Deleted successfully");
-          fetchFlights();
-        } catch {
-          message.error("Delete failed");
-        }
-      },
-    });
-  };
-
-  const handleSubmit = async (values) => {
-    setSubmitLoading(true);
+  const handleAdd = async () => {
     try {
-      if (editMode) {
-        await axios.put(
-          `http://localhost:5000/api/flights/${selectedFlight._id}`,
-          values
-        );
-        message.success("Updated successfully");
-      } else {
-        await axios.post("http://localhost:5000/api/flights", values);
-        message.success("Flight added");
-      }
+      const values = await form.validateFields();
+      await fetch(`${VITE_API_BASE}/flights`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      message.success("Flight added successfully");
+      form.resetFields();
+      setIsModalOpen(false);
       fetchFlights();
-      setModalOpen(false);
-    } catch {
-      message.error("Something went wrong");
-    } finally {
-      setSubmitLoading(false);
+    } catch (err) {
+      message.error("Failed to add flight");
     }
   };
 
   const columns = [
-    {
-      title: "Flight No",
-      dataIndex: "flightNo",
-      key: "flightNo",
-    },
-    {
-      title: "Destination",
-      dataIndex: "destination",
-      key: "destination",
-    },
+    { title: "Flight No", dataIndex: "flightNo", key: "flightNo" },
+    { title: "Destination", dataIndex: "destination", key: "destination" },
     {
       title: "Departure Time",
       dataIndex: "departureTime",
@@ -95,15 +44,15 @@ const Flights = () => {
     },
     {
       title: "Status",
-      dataIndex: "status",
       key: "status",
+      dataIndex: "status",
       render: (status) => {
         let color =
-          status === "On Time"
-            ? "green"
-            : status === "Delayed"
+          status === "Delayed"
             ? "volcano"
-            : "red";
+            : status === "Cancelled"
+            ? "red"
+            : "green";
         return <Tag color={color}>{status}</Tag>;
       },
     },
@@ -112,10 +61,8 @@ const Flights = () => {
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <a onClick={() => handleEdit(record)}>Edit</a>
-          <a onClick={() => handleDelete(record)} style={{ color: "red" }}>
-            Delete
-          </a>
+          <a>Edit</a>
+          <a style={{ color: "red" }}>Delete</a>
         </Space>
       ),
     },
@@ -123,29 +70,49 @@ const Flights = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">✈️ Flight List</h2>
-        <Button type="primary" onClick={handleAdd}>
-          + Add Flight
-        </Button>
-      </div>
+      <h2 className="text-2xl font-semibold mb-4">Flight List</h2>
+      <Button
+        type="primary"
+        onClick={() => setIsModalOpen(true)}
+        className="mb-4"
+      >
+        Add Flight
+      </Button>
+      <Table columns={columns} dataSource={flights} rowKey="id" />
 
-      <Table
-        columns={columns}
-        dataSource={flights}
-        loading={loading}
-        rowKey="_id"
-        pagination={{ pageSize: 5 }}
-      />
-
-      <AddFlightModal
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
-        confirmLoading={submitLoading}
-        editMode={editMode}
-        initialValues={selectedFlight}
-      />
+      <Modal
+        title="Add Flight"
+        open={isModalOpen}
+        onOk={handleAdd}
+        onCancel={() => setIsModalOpen(false)}
+      >
+        <Form layout="vertical" form={form}>
+          <Form.Item
+            name="flightNo"
+            label="Flight No"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="destination"
+            label="Destination"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="departureTime"
+            label="Departure Time"
+            rules={[{ required: true }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="status" label="Status" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
