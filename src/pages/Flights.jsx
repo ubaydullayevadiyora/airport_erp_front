@@ -7,10 +7,17 @@ const Flights = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
+  const API = import.meta.env.VITE_API_BASE;
+
   const fetchFlights = async () => {
-    const res = await fetch(`${VITE_API_BASE}/flights`);
-    const data = await res.json();
-    setFlights(data);
+    try {
+      const res = await fetch(`${API}/flights`);
+      const data = await res.json();
+      setFlights(data);
+    } catch (err) {
+      console.error("❌ Fetch xato:", err);
+      message.error("Ma'lumotlarni yuklashda xatolik");
+    }
   };
 
   useEffect(() => {
@@ -20,17 +27,22 @@ const Flights = () => {
   const handleAdd = async () => {
     try {
       const values = await form.validateFields();
-      await fetch(`${VITE_API_BASE}/flights`, {
+
+      const res = await fetch(`${API}/flights`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      message.success("Flight added successfully");
+
+      if (!res.ok) throw new Error("Serverdan xato");
+
+      message.success("✅ Flight qo‘shildi");
       form.resetFields();
       setIsModalOpen(false);
       fetchFlights();
     } catch (err) {
-      message.error("Failed to add flight");
+      console.error("❌ POST xato:", err);
+      message.error("Flight qo‘shishda xatolik");
     }
   };
 
@@ -76,7 +88,7 @@ const Flights = () => {
         onClick={() => setIsModalOpen(true)}
         className="mb-4"
       >
-        Add Flight
+        ➕ Add Flight
       </Button>
       <Table columns={columns} dataSource={flights} rowKey="id" />
 
@@ -109,7 +121,7 @@ const Flights = () => {
             <Input />
           </Form.Item>
           <Form.Item name="status" label="Status" rules={[{ required: true }]}>
-            <Input />
+            <Input placeholder="On Time, Delayed, Cancelled" />
           </Form.Item>
         </Form>
       </Modal>
